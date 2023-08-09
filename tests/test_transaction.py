@@ -330,7 +330,7 @@ class TestTxIn:
         assert txin.txid == b'txid'
         assert txin.txindex == b'\x04'
         assert txin.witness == b'witness'
-        assert txin.amount == None
+        assert txin.amount is None
         assert txin.sequence == b'\xff\xff\xff\xff'
 
     def test_equality(self):
@@ -343,15 +343,17 @@ class TestTxIn:
     def test_repr(self):
         txin = TxIn(b'script', b'txid', b'\x04', sequence=b'\xff\xff\xff\xff')
 
-        assert repr(txin) == "TxIn(b'script', {}, b'txid', {}, {})" "".format(
-            repr(b'\x06'), repr(b'\x04'), repr(b'\xff\xff\xff\xff')
+        assert (
+            repr(txin)
+            == f"TxIn(b'script', {repr(b'\x06')}, b'txid', {repr(b'\x04')}, {repr(b'\xff\xff\xff\xff')})"
         )
 
     def test_repr_segwit(self):
         txin = TxIn(b'script', b'txid', b'\x04', b'witness', sequence=b'\xff\xff\xff\xff')
 
-        assert repr(txin) == "TxIn(b'script', {}, b'txid', {}, b'witness', {}, {})" "".format(
-            repr(b'\x06'), repr(b'\x04'), repr(None), repr(b'\xff\xff\xff\xff')
+        assert (
+            repr(txin)
+            == f"TxIn(b'script', {repr(b'\x06')}, b'txid', {repr(b'\x04')}, b'witness', {repr(None)}, {repr(b'\xff\xff\xff\xff')})"
         )
 
     def test_bytes_repr(self):
@@ -379,8 +381,9 @@ class TestTxOut:
     def test_repr(self):
         txout = TxOut(b'\x88\x13\x00\x00\x00\x00\x00\x00', b'script_pubkey')
 
-        assert repr(txout) == "TxOut({}, b'script_pubkey', {})" "".format(
-            repr(b'\x88\x13\x00\x00\x00\x00\x00\x00'), repr(b'\r')
+        assert (
+            repr(txout)
+            == f"TxOut({repr(b'\x88\x13\x00\x00\x00\x00\x00\x00')}, b'script_pubkey', {repr(b'\r')})"
         )
 
     def test_bytes_repr(self):
@@ -432,8 +435,9 @@ class TestTxObj:
         txout = [TxOut(b'\x88\x13\x00\x00\x00\x00\x00\x00', b'script_pubkey')]
         txobj = TxObj(b'\x01\x00\x00\x00', txin, txout, b'\x00\x00\x00\x00')
 
-        assert repr(txobj) == "TxObj({}, {}, {}, {})" "".format(
-            repr(b'\x01\x00\x00\x00'), repr(txin), repr(txout), repr(b'\x00\x00\x00\x00')
+        assert (
+            repr(txobj)
+            == f"TxObj({repr(b'\x01\x00\x00\x00')}, {repr(txin)}, {repr(txout)}, {repr(b'\x00\x00\x00\x00')})"
         )
 
     def test_bytes_repr(self):
@@ -864,28 +868,32 @@ class TestAddressToScriptPubKey:
         assert address_to_scriptpubkey(BITCOIN_SEGWIT_ADDRESS_TEST_PAY2SH.upper()) == want
 
     def test_address_to_scriptpubkey_invalid_checksum(self):
-        address_invalid = BITCOIN_ADDRESS[:6] + "error" + BITCOIN_ADDRESS[11:]
+        address_invalid = f"{BITCOIN_ADDRESS[:6]}error{BITCOIN_ADDRESS[11:]}"
         with pytest.raises(ValueError):
             address_to_scriptpubkey(address_invalid)
 
-        address_invalid = BITCOIN_ADDRESS_PAY2SH[:6] + "error" + BITCOIN_ADDRESS_PAY2SH[11:]
+        address_invalid = (
+            f"{BITCOIN_ADDRESS_PAY2SH[:6]}error{BITCOIN_ADDRESS_PAY2SH[11:]}"
+        )
         with pytest.raises(ValueError):
             address_to_scriptpubkey(address_invalid)
 
-        address_invalid = BITCOIN_SEGWIT_ADDRESS[:6] + "error" + BITCOIN_SEGWIT_ADDRESS[11:]
+        address_invalid = (
+            f"{BITCOIN_SEGWIT_ADDRESS[:6]}error{BITCOIN_SEGWIT_ADDRESS[11:]}"
+        )
         with pytest.raises(ValueError):
             address_to_scriptpubkey(address_invalid)
 
     def test_address_to_scriptpubkey_invalid_address(self):
-        address_invalid = "X" + BITCOIN_ADDRESS[1:]
+        address_invalid = f"X{BITCOIN_ADDRESS[1:]}"
         with pytest.raises(ValueError):
             address_to_scriptpubkey(address_invalid)
 
-        address_invalid = "X" + BITCOIN_ADDRESS_PAY2SH[1:]
+        address_invalid = f"X{BITCOIN_ADDRESS_PAY2SH[1:]}"
         with pytest.raises(ValueError):
             address_to_scriptpubkey(address_invalid)
 
-        address_invalid = "X" + BITCOIN_SEGWIT_ADDRESS[1:]
+        address_invalid = f"X{BITCOIN_SEGWIT_ADDRESS[1:]}"
         with pytest.raises(ValueError):
             address_to_scriptpubkey(address_invalid)
 
@@ -995,7 +1003,7 @@ class TestSelectCoins:
         unspents, remaining = select_coins(
             150000000, 0, [34, 34], 0, absolute_fee=False, consolidate=False, unspents=UNSPENTS_SEGWIT
         )
-        assert all([u in UNSPENTS_SEGWIT for u in unspents])
+        assert all(u in UNSPENTS_SEGWIT for u in unspents)
         assert remaining == 50000000
 
 
@@ -1034,7 +1042,7 @@ class TestConstructOutputBlock:
         assert (
             len(outs) == 2
             and outs[0].amount == amount
-            and outs[0].script_pubkey.hex() == 'a914' + PAY2SH_HASH.hex() + '87'
+            and outs[0].script_pubkey.hex() == f'a914{PAY2SH_HASH.hex()}87'
         )
 
     def test_outputs_pay2sh_testnet(self):
@@ -1046,7 +1054,7 @@ class TestConstructOutputBlock:
         assert (
             len(outs) == 2
             and outs[0].amount == amount
-            and outs[0].script_pubkey.hex() == 'a914' + PAY2SH_TEST_HASH.hex() + '87'
+            and outs[0].script_pubkey.hex() == f'a914{PAY2SH_TEST_HASH.hex()}87'
         )
 
     def test_outputs_pay2segwit(self):
@@ -1059,9 +1067,14 @@ class TestConstructOutputBlock:
         )
         outs = construct_outputs(outputs)
         assert (
-            len(outs) == 3 and outs[0].amount == amount and outs[0].script_pubkey.hex() == '0014' + BITCOIN_SEGWIT_HASH
+            len(outs) == 3
+            and outs[0].amount == amount
+            and outs[0].script_pubkey.hex() == f'0014{BITCOIN_SEGWIT_HASH}'
         )
-        assert outs[1].amount == amount and outs[1].script_pubkey.hex() == '0020' + BITCOIN_SEGWIT_HASH_PAY2SH
+        assert (
+            outs[1].amount == amount
+            and outs[1].script_pubkey.hex() == f'0020{BITCOIN_SEGWIT_HASH_PAY2SH}'
+        )
 
     def test_outputs_pay2segwit_testnet(self):
         amount = b'\x01\x00\x00\x00\x00\x00\x00\x00'
@@ -1076,9 +1089,13 @@ class TestConstructOutputBlock:
         assert (
             len(outs) == 3
             and outs[0].amount == amount
-            and outs[0].script_pubkey.hex() == '0014' + BITCOIN_SEGWIT_HASH_TEST
+            and outs[0].script_pubkey.hex() == f'0014{BITCOIN_SEGWIT_HASH_TEST}'
         )
-        assert outs[1].amount == amount and outs[1].script_pubkey.hex() == '0020' + BITCOIN_SEGWIT_HASH_TEST_PAY2SH
+        assert (
+            outs[1].amount == amount
+            and outs[1].script_pubkey.hex()
+            == f'0020{BITCOIN_SEGWIT_HASH_TEST_PAY2SH}'
+        )
 
 
 class TestCalcTxId:

@@ -31,15 +31,15 @@ def wif_to_key(wif):
     private_key_bytes, compressed, version = wif_to_bytes(wif)
 
     if version == 'main':
-        if compressed:
-            return PrivateKey.from_bytes(private_key_bytes)
-        else:
-            return PrivateKey(wif)
+        return (
+            PrivateKey.from_bytes(private_key_bytes)
+            if compressed
+            else PrivateKey(wif)
+        )
+    if compressed:
+        return PrivateKeyTestnet.from_bytes(private_key_bytes)
     else:
-        if compressed:
-            return PrivateKeyTestnet.from_bytes(private_key_bytes)
-        else:
-            return PrivateKeyTestnet(wif)
+        return PrivateKeyTestnet(wif)
 
 
 class BaseKey:
@@ -136,7 +136,7 @@ class BaseKey:
 
         :rtype: ``bool``
         """
-        return True if len(self.public_key) == 33 else False
+        return len(self.public_key) == 33
 
     def __eq__(self, other):
         return self.to_int() == other.to_int()
@@ -198,7 +198,7 @@ class PrivateKey(BaseKey):
         script = bytes_to_hex(address_to_scriptpubkey(self.address))
         if self.segwit_address:
             segwit_script = bytes_to_hex(address_to_scriptpubkey(self.segwit_address))
-            return unspent.script == script or unspent.script == segwit_script
+            return unspent.script in [script, segwit_script]
         else:
             return unspent.script == script
 
@@ -263,7 +263,7 @@ class PrivateKey(BaseKey):
         unspents=None,
         message_is_hex=False,
         replace_by_fee=False
-    ):  # pragma: no cover
+    ):    # pragma: no cover
         """Creates a signed P2PKH transaction.
 
         :param outputs: A sequence of outputs you wish to send in the form
@@ -304,7 +304,11 @@ class PrivateKey(BaseKey):
             raise ConnectionError('All APIs are unreachable. Please provide the unspents to spend from directly.')
 
         # If at least one input is from segwit the return address is for segwit
-        return_address = self.segwit_address if any([u.segwit for u in unspents]) else self.address
+        return_address = (
+            self.segwit_address
+            if any(u.segwit for u in unspents)
+            else self.address
+        )
 
         unspents, outputs = sanitize_tx_data(
             unspents,
@@ -535,7 +539,7 @@ class PrivateKey(BaseKey):
         return PrivateKey(ECPrivateKey.from_int(num))
 
     def __repr__(self):
-        return '<PrivateKey: {}>'.format(self.address)
+        return f'<PrivateKey: {self.address}>'
 
 
 class PrivateKeyTestnet(BaseKey):
@@ -595,7 +599,7 @@ class PrivateKeyTestnet(BaseKey):
         script = bytes_to_hex(address_to_scriptpubkey(self.address))
         if self.segwit_address:
             segwit_script = bytes_to_hex(address_to_scriptpubkey(self.segwit_address))
-            return unspent.script == script or unspent.script == segwit_script
+            return unspent.script in [script, segwit_script]
         else:
             return unspent.script == script
 
@@ -662,7 +666,7 @@ class PrivateKeyTestnet(BaseKey):
         unspents=None,
         message_is_hex=False,
         replace_by_fee=False
-    ):  # pragma: no cover
+    ):    # pragma: no cover
         """Creates a signed P2PKH transaction.
 
         :param outputs: A sequence of outputs you wish to send in the form
@@ -703,7 +707,11 @@ class PrivateKeyTestnet(BaseKey):
             raise ConnectionError('All APIs are unreachable. Please provide the unspents to spend from directly.')
 
         # If at least one input is from segwit the return address is for segwit
-        return_address = self.segwit_address if any([u.segwit for u in unspents]) else self.address
+        return_address = (
+            self.segwit_address
+            if any(u.segwit for u in unspents)
+            else self.address
+        )
 
         unspents, outputs = sanitize_tx_data(
             unspents,
@@ -934,7 +942,7 @@ class PrivateKeyTestnet(BaseKey):
         return PrivateKeyTestnet(ECPrivateKey.from_int(num))
 
     def __repr__(self):
-        return '<PrivateKeyTestnet: {}>'.format(self.address)
+        return f'<PrivateKeyTestnet: {self.address}>'
 
 
 Key = PrivateKey
@@ -1022,7 +1030,7 @@ class MultiSig:
         script = bytes_to_hex(address_to_scriptpubkey(self.address))
         if self.segwit_address:
             segwit_script = bytes_to_hex(address_to_scriptpubkey(self.segwit_address))
-            return unspent.script == script or unspent.script == segwit_script
+            return unspent.script in [script, segwit_script]
         else:
             return unspent.script == script
 
@@ -1101,7 +1109,7 @@ class MultiSig:
         unspents=None,
         message_is_hex=False,
         replace_by_fee=False
-    ):  # pragma: no cover
+    ):    # pragma: no cover
         """Creates a signed P2SH transaction.
 
         :param outputs: A sequence of outputs you wish to send in the form
@@ -1142,7 +1150,11 @@ class MultiSig:
             raise ConnectionError('All APIs are unreachable. Please provide the unspents to spend from directly.')
 
         # If at least one input is from segwit the return address is for segwit
-        return_address = self.segwit_address if any([u.segwit for u in unspents]) else self.address
+        return_address = (
+            self.segwit_address
+            if any(u.segwit for u in unspents)
+            else self.address
+        )
 
         unspents, outputs = sanitize_tx_data(
             unspents,
@@ -1263,7 +1275,7 @@ class MultiSig:
             return sign_tx(self, tx_data, unspents=unspents)
 
     def __repr__(self):
-        return '<MultiSig: {}>'.format(self.address)
+        return f'<MultiSig: {self.address}>'
 
 
 class MultiSigTestnet:
@@ -1348,7 +1360,7 @@ class MultiSigTestnet:
         script = bytes_to_hex(address_to_scriptpubkey(self.address))
         if self.segwit_address:
             segwit_script = bytes_to_hex(address_to_scriptpubkey(self.segwit_address))
-            return unspent.script == script or unspent.script == segwit_script
+            return unspent.script in [script, segwit_script]
         else:
             return unspent.script == script
 
@@ -1430,7 +1442,7 @@ class MultiSigTestnet:
         unspents=None,
         message_is_hex=False,
         replace_by_fee=False
-    ):  # pragma: no cover
+    ):    # pragma: no cover
         """Creates a signed P2SH transaction.
 
         :param outputs: A sequence of outputs you wish to send in the form
@@ -1471,7 +1483,11 @@ class MultiSigTestnet:
             raise ConnectionError('All APIs are unreachable. Please provide the unspents to spend from directly.')
 
         # If at least one input is from segwit the return address is for segwit
-        return_address = self.segwit_address if any([u.segwit for u in unspents]) else self.address
+        return_address = (
+            self.segwit_address
+            if any(u.segwit for u in unspents)
+            else self.address
+        )
 
         unspents, outputs = sanitize_tx_data(
             unspents,
@@ -1592,4 +1608,4 @@ class MultiSigTestnet:
             return sign_tx(self, tx_data, unspents=unspents)
 
     def __repr__(self):
-        return '<MultiSigTestnet: {}>'.format(self.address)
+        return f'<MultiSigTestnet: {self.address}>'

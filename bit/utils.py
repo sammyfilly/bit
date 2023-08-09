@@ -25,7 +25,7 @@ def bytes_to_hex(bytestr, upper=False):
 def hex_to_bytes(hexed):
 
     if len(hexed) & 1:
-        hexed = '0' + hexed
+        hexed = f'0{hexed}'
 
     return bytes.fromhex(hexed)
 
@@ -69,7 +69,7 @@ def script_push(val):
 
 # Slicing functions returning the byte-data-stream splitted
 def read_bytes(stream, bytes):
-    return stream[0:bytes], stream[bytes:]
+    return stream[:bytes], stream[bytes:]
 
 
 def read_var_string(stream):
@@ -78,14 +78,14 @@ def read_var_string(stream):
 
 
 def read_var_int(stream):
-    val = int(bytes_to_hex(stream[0:1]), base=16)
+    val = int(bytes_to_hex(stream[:1]), base=16)
     if val < 253:
         return val, stream[1:]
     return read_as_int(stream[1:], 2 ** (val - 252))
 
 
 def read_as_int(stream, bytes):
-    return int(bytes_to_hex(stream[0:bytes][::-1]), base=16), stream[bytes:]
+    return int(bytes_to_hex(stream[:bytes][::-1]), base=16), stream[bytes:]
 
 
 def read_segwit_string(stream):
