@@ -78,18 +78,8 @@ class TxIn:
 
     def __repr__(self):
         if self.is_segwit():
-            return 'TxIn({}, {}, {}, {}, {}, {}, {})'.format(
-                repr(self.script_sig),
-                repr(self.script_sig_len),
-                repr(self.txid),
-                repr(self.txindex),
-                repr(self.witness),
-                repr(self.amount),
-                repr(self.sequence),
-            )
-        return 'TxIn({}, {}, {}, {}, {})'.format(
-            repr(self.script_sig), repr(self.script_sig_len), repr(self.txid), repr(self.txindex), repr(self.sequence)
-        )
+            return f'TxIn({repr(self.script_sig)}, {repr(self.script_sig_len)}, {repr(self.txid)}, {repr(self.txindex)}, {repr(self.witness)}, {repr(self.amount)}, {repr(self.sequence)})'
+        return f'TxIn({repr(self.script_sig)}, {repr(self.script_sig_len)}, {repr(self.txid)}, {repr(self.txindex)}, {repr(self.sequence)})'
 
     def __bytes__(self):
         return b''.join([self.txid, self.txindex, self.script_sig_len, self.script_sig, self.sequence])
@@ -117,7 +107,7 @@ class TxOut:
         )
 
     def __repr__(self):
-        return 'TxOut({}, {}, {})'.format(repr(self.amount), repr(self.script_pubkey), repr(self.script_pubkey_len))
+        return f'TxOut({repr(self.amount)}, {repr(self.script_pubkey)}, {repr(self.script_pubkey_len)})'
 
     def __bytes__(self):
         return b''.join([self.amount, self.script_pubkey_len, self.script_pubkey])
@@ -127,7 +117,7 @@ class TxObj:
     __slots__ = ('version', 'TxIn', 'TxOut', 'locktime')
 
     def __init__(self, version, TxIn, TxOut, locktime):
-        segwit_tx = any([i.segwit_input or i.witness for i in TxIn])
+        segwit_tx = any(i.segwit_input or i.witness for i in TxIn)
         self.version = version
         self.TxIn = TxIn
         if segwit_tx:
@@ -145,9 +135,7 @@ class TxObj:
         )
 
     def __repr__(self):
-        return 'TxObj({}, {}, {}, {})'.format(
-            repr(self.version), repr(self.TxIn), repr(self.TxOut), repr(self.locktime)
-        )
+        return f'TxObj({repr(self.version)}, {repr(self.TxIn)}, {repr(self.TxOut)}, {repr(self.locktime)})'
 
     def __bytes__(self):
         inp = int_to_varint(len(self.TxIn)) + b''.join(map(bytes, self.TxIn))
@@ -194,7 +182,9 @@ def estimate_tx_fee(in_size, n_in, out_size, n_out, satoshis, segwit=False):
 
     estimated_fee = estimated_size * satoshis
 
-    logging.debug('Estimated fee: {} satoshis for {} bytes'.format(estimated_fee, estimated_size))
+    logging.debug(
+        f'Estimated fee: {estimated_fee} satoshis for {estimated_size} bytes'
+    )
 
     return estimated_fee
 
@@ -272,12 +262,11 @@ def select_coins(target, fee, output_size, min_change, *, absolute_fee=False, co
 
                 if with_this != []:
                     return with_this
-                else:
-                    without_this = branch_and_bound(
-                        d + 1, selected_coins, effective_value, target, fee, sorted_unspents
-                    )
+                without_this = branch_and_bound(
+                    d + 1, selected_coins, effective_value, target, fee, sorted_unspents
+                )
 
-                    return without_this
+                return without_this
 
             else:
                 # As above but explore omission branch first:
@@ -285,14 +274,13 @@ def select_coins(target, fee, output_size, min_change, *, absolute_fee=False, co
 
                 if without_this != []:
                     return without_this
-                else:
-                    effective_value_new = effective_value + sorted_unspents[d].amount - fee * sorted_unspents[d].vsize
+                effective_value_new = effective_value + sorted_unspents[d].amount - fee * sorted_unspents[d].vsize
 
-                    with_this = branch_and_bound(
-                        d + 1, selected_coins + [sorted_unspents[d]], effective_value_new, target, fee, sorted_unspents
-                    )
+                with_this = branch_and_bound(
+                    d + 1, selected_coins + [sorted_unspents[d]], effective_value_new, target, fee, sorted_unspents
+                )
 
-                    return with_this
+                return with_this
 
     sorted_unspents = sorted(unspents, key=lambda u: u.amount, reverse=True)
     selected_coins = []
@@ -345,7 +333,7 @@ def deserialize(tx):
 
     ins, tx = read_var_int(tx)
     inputs = []
-    for i in range(ins):
+    for _ in range(ins):
         txid, tx = read_bytes(tx, 32)
         txindex, tx = read_bytes(tx, 4)
         script_sig, tx = read_var_string(tx)
@@ -370,9 +358,7 @@ def deserialize(tx):
 
     locktime, _ = read_bytes(tx, 4)
 
-    txobj = TxObj(version, inputs, outputs, locktime)
-
-    return txobj
+    return TxObj(version, inputs, outputs, locktime)
 
 
 def sanitize_tx_data(
@@ -413,9 +399,7 @@ def sanitize_tx_data(
         else:
             message_chunks = chunk_data(message.encode('utf-8'), MESSAGE_LIMIT)
 
-        for message in message_chunks:
-            messages.append((message, 0))
-
+        messages.extend((message, 0) for message in message_chunks)
     # Include return address in output count.
     # Calculate output size as a list (including return address).
     output_size = [len(address_to_scriptpubkey(o[0])) + 9 for o in outputs]
@@ -446,7 +430,9 @@ def sanitize_tx_data(
         dest, amount = output
         vs = get_version(dest)
         if vs and vs != version:
-            raise ValueError('Cannot send to ' + vs + 'net address when spending from a ' + version + 'net address.')
+            raise ValueError(
+                f'Cannot send to {vs}net address when spending from a {version}net address.'
+            )
 
     outputs.extend(messages)
 
@@ -462,9 +448,9 @@ def address_to_scriptpubkey(address):
         witver, data = segwit_decode(address)
         return segwit_scriptpubkey(witver, data)
 
-    if version == MAIN_PUBKEY_HASH or version == TEST_PUBKEY_HASH:
+    if version in [MAIN_PUBKEY_HASH, TEST_PUBKEY_HASH]:
         return OP_DUP + OP_HASH160 + OP_PUSH_20 + address_to_public_key_hash(address) + OP_EQUALVERIFY + OP_CHECKSIG
-    elif version == MAIN_SCRIPT_HASH or version == TEST_SCRIPT_HASH:
+    elif version in [MAIN_SCRIPT_HASH, TEST_SCRIPT_HASH]:
         return OP_HASH160 + OP_PUSH_20 + address_to_public_key_hash(address) + OP_EQUAL
 
 
@@ -642,7 +628,7 @@ def sign_tx(private_key, tx, *, unspents):
         signature = private_key.sign(hash) + b'\x01'
 
         # ------------------------------------------------------------------
-        if private_key.instance == 'MultiSig' or private_key.instance == 'MultiSigTestnet':
+        if private_key.instance in ['MultiSig', 'MultiSigTestnet']:
             # P2(W)SH input
 
             script_blob = b''
@@ -686,10 +672,6 @@ def sign_tx(private_key, tx, *, unspents):
                 else script_push(len(private_key.redeemscript))
             ) + private_key.redeemscript
 
-            script_sig = script_sig if segwit_input else witness
-            witness = witness if segwit_input else b'\x00' if segwit_tx else b''
-
-        # ------------------------------------------------------------------
         else:
             # P2(W)PKH input
 
@@ -703,8 +685,8 @@ def sign_tx(private_key, tx, *, unspents):
                 + public_key
             )
 
-            script_sig = script_sig if segwit_input else witness
-            witness = witness if segwit_input else b'\x00' if segwit_tx else b''
+        script_sig = script_sig if segwit_input else witness
+        witness = witness if segwit_input else b'\x00' if segwit_tx else b''
 
         # Providing the signature(s) to the input
         tx.TxIn[i].script_sig = script_sig
@@ -722,8 +704,8 @@ def create_new_transaction(private_key, unspents, outputs):
 
     # Optimize for speed, not memory, by pre-computing values.
     inputs = []
+    script_sig = b''  # empty scriptSig for new unsigned transaction.
     for unspent in unspents:
-        script_sig = b''  # empty scriptSig for new unsigned transaction.
         txid = hex_to_bytes(unspent.txid)[::-1]
         txindex = unspent.txindex.to_bytes(4, byteorder='little')
         amount = int(unspent.amount).to_bytes(8, byteorder='little')
@@ -733,5 +715,4 @@ def create_new_transaction(private_key, unspents, outputs):
 
     tx_unsigned = TxObj(version, inputs, outputs, lock_time)
 
-    tx = sign_tx(private_key, tx_unsigned, unspents=unspents)
-    return tx
+    return sign_tx(private_key, tx_unsigned, unspents=unspents)

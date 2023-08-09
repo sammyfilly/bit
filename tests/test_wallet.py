@@ -575,7 +575,7 @@ class TestMultiSig:
         key1 = PrivateKey(WALLET_FORMAT_MAIN_1)
         key2 = PrivateKey(WALLET_FORMAT_MAIN_2)
         multisig = MultiSig(key1, [key1.public_key, key2.public_key], 2)
-        assert repr(multisig) == '<MultiSig: {}>'.format(BITCOIN_ADDRESS_P2SH_MULTISIG)
+        assert repr(multisig) == f'<MultiSig: {BITCOIN_ADDRESS_P2SH_MULTISIG}>'
 
 
 class TestMultiSigTestnet:
@@ -704,4 +704,7 @@ class TestMultiSigTestnet:
         key1 = PrivateKeyTestnet(WALLET_FORMAT_TEST_1)
         key2 = PrivateKeyTestnet(WALLET_FORMAT_TEST_2)
         multisig = MultiSigTestnet(key1, [key1.public_key, key2.public_key], 2)
-        assert repr(multisig) == '<MultiSigTestnet: {}>'.format(BITCOIN_ADDRESS_TEST_P2SH_MULTISIG)
+        assert (
+            repr(multisig)
+            == f'<MultiSigTestnet: {BITCOIN_ADDRESS_TEST_P2SH_MULTISIG}>'
+        )

@@ -86,29 +86,31 @@ class MockRPCHost(RPCHost):
 
 class MockRPCMethod(RPCMethod):
     def __call__(self, *args):
-        if self._rpc_method == "getreceivedbyaddress":
-            assert (
-                args[0] == MAIN_ADDRESS_USED1
-                or args[0] == TEST_ADDRESS_USED2
-                or args[0] == MAIN_ADDRESS_UNUSED
-                or args[0] == TEST_ADDRESS_UNUSED
-            )
+        if self._rpc_method == "getrawtransaction":
+            assert args[0] in [MAIN_TX_VALID, TEST_TX_VALID]
+            assert args[1] is False
+            return True
+
+        elif self._rpc_method == "getreceivedbyaddress":
+            assert args[0] in [
+                MAIN_ADDRESS_USED1,
+                TEST_ADDRESS_USED2,
+                MAIN_ADDRESS_UNUSED,
+                TEST_ADDRESS_UNUSED,
+            ]
             assert args[1] == 0
 
-            if args[0] in (MAIN_ADDRESS_USED1, TEST_ADDRESS_USED2):
-                return 1.23456789
-            return 0
-
-        if self._rpc_method == "listreceivedbyaddress":
+            return 1.23456789 if args[0] in (MAIN_ADDRESS_USED1, TEST_ADDRESS_USED2) else 0
+        elif self._rpc_method == "listreceivedbyaddress":
             assert args[0] == 0
             assert args[1] is True
             assert args[2] is True
-            assert (
-                args[3] == MAIN_ADDRESS_USED1
-                or args[3] == TEST_ADDRESS_USED2
-                or args[3] == MAIN_ADDRESS_UNUSED
-                or args[3] == TEST_ADDRESS_UNUSED
-            )
+            assert args[3] in [
+                MAIN_ADDRESS_USED1,
+                TEST_ADDRESS_USED2,
+                MAIN_ADDRESS_UNUSED,
+                TEST_ADDRESS_UNUSED,
+            ]
 
             if args[3] == MAIN_ADDRESS_USED1:
                 return [
@@ -141,52 +143,48 @@ class MockRPCMethod(RPCMethod):
                 ]
             return []
 
-        if self._rpc_method == "getrawtransaction":
-            assert args[0] == MAIN_TX_VALID or args[0] == TEST_TX_VALID
-            assert args[1] is False
-            return True
-
-        if self._rpc_method == "listunspent":
+        elif self._rpc_method == "listunspent":
             assert args[0] == 0
             assert args[1] == 9999999
-            assert (
-                args[2] == [MAIN_ADDRESS_USED1]
-                or args[2] == [TEST_ADDRESS_USED2]
-                or args[2] == [MAIN_ADDRESS_UNUSED]
-                or args[2] == [TEST_ADDRESS_UNUSED]
-            )
-
-            if args[2][0] in (MAIN_ADDRESS_UNUSED, TEST_ADDRESS_UNUSED):
-                return []
-            return [
-                {
-                    "txid": "381f1605dd927151fbfac2e88608464414fa5b01bd6298cd1e2d9d991907aa9e",
-                    "vout": 0,
-                    "address": MAIN_ADDRESS_USED1,
-                    "label": "",
-                    "scriptPubKey": "a9142df37714a79eacad089a41481a6a3e400d39a54687",
-                    "amount": 1.23456789,
-                    "confirmations": 0,
-                    "spendable": False,
-                    "solvable": False,
-                    "safe": True,
-                },
-                {
-                    "txid": "ef9bd3ac4eacc60a16117eaca0631bbef673eb8a71084de4b9ada3317f7895e9",
-                    "vout": 1,
-                    "address": MAIN_ADDRESS_USED1,
-                    "label": "",
-                    "scriptPubKey": "a9142df37714a79eacad089a41481a6a3e400d39a54687",
-                    "amount": 1.23456789,
-                    "confirmations": 0,
-                    "spendable": False,
-                    "solvable": False,
-                    "safe": True,
-                },
+            assert args[2] in [
+                [MAIN_ADDRESS_USED1],
+                [TEST_ADDRESS_USED2],
+                [MAIN_ADDRESS_UNUSED],
+                [TEST_ADDRESS_UNUSED],
             ]
 
+            return (
+                []
+                if args[2][0] in (MAIN_ADDRESS_UNUSED, TEST_ADDRESS_UNUSED)
+                else [
+                    {
+                        "txid": "381f1605dd927151fbfac2e88608464414fa5b01bd6298cd1e2d9d991907aa9e",
+                        "vout": 0,
+                        "address": MAIN_ADDRESS_USED1,
+                        "label": "",
+                        "scriptPubKey": "a9142df37714a79eacad089a41481a6a3e400d39a54687",
+                        "amount": 1.23456789,
+                        "confirmations": 0,
+                        "spendable": False,
+                        "solvable": False,
+                        "safe": True,
+                    },
+                    {
+                        "txid": "ef9bd3ac4eacc60a16117eaca0631bbef673eb8a71084de4b9ada3317f7895e9",
+                        "vout": 1,
+                        "address": MAIN_ADDRESS_USED1,
+                        "label": "",
+                        "scriptPubKey": "a9142df37714a79eacad089a41481a6a3e400d39a54687",
+                        "amount": 1.23456789,
+                        "confirmations": 0,
+                        "spendable": False,
+                        "solvable": False,
+                        "safe": True,
+                    },
+                ]
+            )
         if self._rpc_method == "sendrawtransaction":
-            assert args[0] == "01000000000000000000" or args[0] == "00000000000000000000"
+            assert args[0] in ["01000000000000000000", "00000000000000000000"]
 
             if args[0] == "00000000000000000000":
                 raise bit.exceptions.BitcoinNodeException()
@@ -434,7 +432,7 @@ class TestBlockchainAPI:
         assert calc_txid(tx) == MAIN_TX_VALID
 
     def test_get_transaction_by_id_invalid(self):
-        assert BlockchainAPI.get_transaction_by_id(TX_INVALID) == None
+        assert BlockchainAPI.get_transaction_by_id(TX_INVALID) is None
 
     def test_get_unspent_return_type(self):
         assert iter(BlockchainAPI.get_unspent(MAIN_ADDRESS_USED1))
@@ -488,14 +486,14 @@ class TestBlockchairAPI:
         assert calc_txid(tx) == MAIN_TX_VALID
 
     def test_get_transaction_by_id_invalid(self):
-        assert BlockchairAPI.get_transaction_by_id(TX_INVALID) == None
+        assert BlockchairAPI.get_transaction_by_id(TX_INVALID) is None
 
     def test_get_transaction_by_id_test_valid(self):
         tx = BlockchairAPI.get_transaction_by_id_testnet(TEST_TX_VALID)
         assert calc_txid(tx) == TEST_TX_VALID
 
     def test_get_transaction_by_id_test_invalid(self):
-        assert BlockchairAPI.get_transaction_by_id_testnet(TX_INVALID) == None
+        assert BlockchairAPI.get_transaction_by_id_testnet(TX_INVALID) is None
 
     def test_get_unspent_return_type(self):
         assert iter(BlockchairAPI.get_unspent(MAIN_ADDRESS_USED1))
@@ -550,14 +548,14 @@ class TestBlockstreamAPI:
         assert calc_txid(tx) == MAIN_TX_VALID
 
     def test_get_transaction_by_id_invalid(self):
-        assert BlockstreamAPI.get_transaction_by_id(TX_INVALID) == None
+        assert BlockstreamAPI.get_transaction_by_id(TX_INVALID) is None
 
     def test_get_transaction_by_id_test_valid(self):
         tx = BlockstreamAPI.get_transaction_by_id_testnet(TEST_TX_VALID)
         assert calc_txid(tx) == TEST_TX_VALID
 
     def test_get_transaction_by_id_test_invalid(self):
-        assert BlockstreamAPI.get_transaction_by_id_testnet(TX_INVALID) == None
+        assert BlockstreamAPI.get_transaction_by_id_testnet(TX_INVALID) is None
 
     def test_get_unspent_return_type(self):
         assert iter(BlockstreamAPI.get_unspent(MAIN_ADDRESS_USED1))
@@ -618,14 +616,14 @@ class TestSmartbitAPI:
         assert calc_txid(tx) == MAIN_TX_VALID
 
     def test_get_transaction_by_id_invalid(self):
-        assert SmartbitAPI.get_transaction_by_id(TX_INVALID) == None
+        assert SmartbitAPI.get_transaction_by_id(TX_INVALID) is None
 
     def test_get_transaction_by_id_test_valid(self):
         tx = SmartbitAPI.get_transaction_by_id_testnet(TEST_TX_VALID)
         assert calc_txid(tx) == TEST_TX_VALID
 
     def test_get_transaction_by_id_test_invalid(self):
-        assert SmartbitAPI.get_transaction_by_id_testnet(TX_INVALID) == None
+        assert SmartbitAPI.get_transaction_by_id_testnet(TX_INVALID) is None
 
     def test_get_unspent_return_type(self):
         assert iter(SmartbitAPI.get_unspent(MAIN_ADDRESS_USED1))

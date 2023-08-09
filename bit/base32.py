@@ -55,7 +55,7 @@ def bech32_create_checksum(hrp, data):
 def bech32_encode(hrp, data):
     """Compute a Bech32 string given HRP and data values."""
     combined = data + bech32_create_checksum(hrp, data)
-    return hrp + '1' + ''.join([CHARSET[d] for d in combined])
+    return f'{hrp}1' + ''.join([CHARSET[d] for d in combined])
 
 
 def bech32_decode(bech):
@@ -66,13 +66,11 @@ def bech32_decode(bech):
     pos = bech.rfind('1')
     if pos < 1 or pos + 7 > len(bech) or len(bech) > 90:
         return (None, None)
-    if not all(x in CHARSET for x in bech[pos + 1 :]):
+    if any(x not in CHARSET for x in bech[pos + 1 :]):
         return (None, None)
     hrp = bech[:pos]
     data = [CHARSET.find(x) for x in bech[pos + 1 :]]
-    if not bech32_verify_checksum(hrp, data):
-        return (None, None)
-    return (hrp, data[:-6])
+    return (hrp, data[:-6]) if bech32_verify_checksum(hrp, data) else (None, None)
 
 
 def convertbits(data, frombits, tobits, pad=True):
@@ -118,6 +116,4 @@ def decode(addr):
 def encode(hrp, witver, witprog):
     """Encode a segwit address."""
     ret = bech32_encode(hrp, [witver] + convertbits(witprog, 8, 5))
-    if decode(ret) == (None, None):
-        return None
-    return ret
+    return None if decode(ret) == (None, None) else ret

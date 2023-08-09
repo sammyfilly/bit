@@ -57,15 +57,7 @@ class Unspent:
         )
 
     def __repr__(self):
-        return 'Unspent(amount={}, confirmations={}, script={}, txid={}, txindex={}, segwit={}, sequence={})'.format(
-            repr(self.amount),
-            repr(self.confirmations),
-            repr(self.script),
-            repr(self.txid),
-            repr(self.txindex),
-            repr(self.segwit),
-            repr(self.sequence)
-        )
+        return f'Unspent(amount={repr(self.amount)}, confirmations={repr(self.confirmations)}, script={repr(self.script)}, txid={repr(self.txid)}, txindex={repr(self.txindex)}, segwit={repr(self.segwit)}, sequence={repr(self.sequence)})'
 
     def set_type(self, type, vsize=0):
         self.type = type if type in UNSPENT_TYPES else 'unknown'
@@ -74,5 +66,4 @@ class Unspent:
         return self
 
     def opt_in_for_RBF(self):
-        if self.sequence > 4294967293:
-            self.sequence = 4294967293
+        self.sequence = min(self.sequence, 4294967293)
